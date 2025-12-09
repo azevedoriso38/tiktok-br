@@ -1,0 +1,12 @@
+{
+  "name": "meu-projeto-websocket",
+  "version": "1.0.0",
+  "description": "Projeto Node.js com WebSocket para cadastro de usuários",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.17.0"
+  }
+}

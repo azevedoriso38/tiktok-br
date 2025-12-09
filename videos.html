@@ -5,7 +5,85 @@
     <title>Vídeos</title>
 </head>
 <body>
-    <h1>Bem-vindo!</h1>
-    <p>Você entrou com sucesso. Aqui serão listados os vídeos.</p>
+    <h1>Painel de Vídeos</h1>
+
+    <h2>Perfil</h2>
+    <p>Nome de usuário: <span id="usernameDisplay"></span></p>
+
+    <img id="avatar" src="default.png" alt="Foto de perfil" width="150"><br><br>
+
+    <input id="newUsername" placeholder="Novo nome de usuário"><br><br>
+    <input type="file" id="newAvatar"><br><br>
+
+    <button onclick="atualizarPerfil()">Atualizar Perfil</button>
+
+    <p id="msg"></p>
+
+    <script>
+        const socket = new WebSocket("wss://" + window.location.host);
+
+        let currentUser = localStorage.getItem("currentUser");
+
+        socket.onopen = () => {
+            console.log("Conectado ao servidor WebSocket!");
+
+            // Solicita dados do usuário
+            socket.send(JSON.stringify({
+                type: "get_profile",
+                username: currentUser
+            }));
+        };
+
+        socket.onmessage = msg => {
+            const data = JSON.parse(msg.data);
+            const msgEl = document.getElementById("msg");
+
+            if (data.type === "profile_data") {
+                document.getElementById("usernameDisplay").innerText = data.username;
+                document.getElementById("avatar").src = data.avatar || "default.png";
+            }
+
+            if (data.type === "update_profile_response") {
+                msgEl.innerText = data.message;
+                msgEl.style.color = data.success ? "green" : "red";
+
+                // Atualiza a tela
+                if (data.success) {
+                    document.getElementById("usernameDisplay").innerText = data.username;
+                    if (data.avatar) {
+                        document.getElementById("avatar").src = data.avatar;
+                    }
+                    localStorage.setItem("currentUser", data.username);
+                }
+            }
+        };
+
+        function atualizarPerfil() {
+            const newUsername = document.getElementById("newUsername").value;
+            const avatarFile = document.getElementById("newAvatar").files[0];
+
+            if (!newUsername && !avatarFile) return alert("Digite um novo nome ou selecione uma foto");
+
+            if (avatarFile) {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const avatarData = reader.result; // Base64
+                    socket.send(JSON.stringify({
+                        type: "update_profile",
+                        username: currentUser,
+                        newUsername,
+                        avatarData
+                    }));
+                };
+                reader.readAsDataURL(avatarFile);
+            } else {
+                socket.send(JSON.stringify({
+                    type: "update_profile",
+                    username: currentUser,
+                    newUsername
+                }));
+            }
+        }
+    </script>
 </body>
 </html>

@@ -1,9 +1,17 @@
+const http = require('http');
 const WebSocket = require('ws');
 const fs = require('fs');
 
-const wss = new WebSocket.Server({ port: 8080 });
+const PORT = process.env.PORT || 8080;
 
-// Carregar arquivo de usuários
+const server = http.createServer((req, res) => {
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("Servidor WebSocket está rodando");
+});
+
+const wss = new WebSocket.Server({ server });
+
+// Funções de carregar e salvar usuários
 function loadUsers() {
     if (!fs.existsSync('users.json')) {
         fs.writeFileSync('users.json', JSON.stringify([]));
@@ -11,11 +19,11 @@ function loadUsers() {
     return JSON.parse(fs.readFileSync('users.json'));
 }
 
-// Salvar usuários
 function saveUsers(users) {
     fs.writeFileSync('users.json', JSON.stringify(users, null, 2));
 }
 
+// WebSocket
 wss.on('connection', ws => {
     console.log("Cliente conectado");
 
@@ -25,7 +33,6 @@ wss.on('connection', ws => {
         if (data.type === 'register') {
             let users = loadUsers();
 
-            // Verifica duplicidade
             if (users.some(u => u.username === data.username)) {
                 ws.send(JSON.stringify({
                     type: 'register_response',
@@ -47,4 +54,6 @@ wss.on('connection', ws => {
     });
 });
 
-console.log("Servidor WebSocket rodando na porta 8080");
+server.listen(PORT, () => {
+    console.log("Servidor rodando na porta " + PORT);
+});
